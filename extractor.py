@@ -9,12 +9,48 @@ genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-pro-latest') # Ein leistungsstarkes Modell für Analyse
 
 # --- Konstanten ---
-# Eine verkürzte, chronologische Liste für diesen Test. Kann beliebig erweitert werden.
+# Die vollständige, chronologische Liste der 41 Hauptromane der Scheibenwelt.
 NOVEL_LIST: List[str] = [
+    "Die Farbe der Magie (The Colour of Magic)",
+    "Das Licht der Phantasie (The Light Fantastic)",
+    "Das Erbe des Zauberers (Equal Rites)",
+    "Gevatter Tod (Mort)",
+    "Der Zauberhut (Sourcery)",
+    "MacBest (Wyrd Sisters)",
+    "Pyramiden (Pyramids)",
     "Wachen! Wachen! (Guards! Guards!)",
+#    "Eric (Faust Eric)", # Oft als illustrierte Novelle gezählt, kann aber hier rein.
+    "Voll im Bilde (Moving Pictures)",
+    "Alles Sense! (Reaper Man)",
+    "Hexen auf Reisen (Witches Abroad)",
+    "Einfach göttlich (Small Gods)",
+    "Lords und Ladies (Lords and Ladies)",
     "Helle Barden (Men at Arms)",
+    "Rollende Steine (Soul Music)",
+    "Echt zauberhaft (Interesting Times)",
+    "Mummenschanz (Maskerade)",
     "Hohle Worte (Feet of Clay)",
-    "Klonk! (Thud!)"
+    "Schweinsgalopp (Hogfather)",
+    "Ab die Post (Jingo)",
+    "Die letzte Heldin (The Last Hero)", # Illustrierte Novelle
+    "Der fünfte Elefant (The Fifth Elephant)",
+    "Die volle Wahrheit (The Truth)",
+    "Der Zeitdieb (Thief of Time)",
+    "Der letzte Held (The Last Continent)", # Hier ist die Reihenfolge manchmal umstritten
+    "Wahre Helden (The Amazing Maurice and his Educated Rodents)", # Eher ein Jugendbuch
+    "Die Nachtwächter (Night Watch)",
+    "Kleine freie Männer (The Wee Free Men)", # Tiffany Aching 1
+    "Weiberregiment (Monstrous Regiment)",
+    "Ein Hut voller Sterne (A Hat Full of Sky)", # Tiffany Aching 2
+    "Ab die Post (Going Postal)",
+    "Klonk! (Thud!)",
+    "Der Winterschmied (Wintersmith)", # Tiffany Aching 3
+    "Schöne Scheine (Making Money)",
+    "Der Club der unsichtbaren Gelehrten (Unseen Academicals)",
+    "Das Mitternachtskleid (I Shall Wear Midnight)", # Tiffany Aching 4
+    "Steife Prise (Snuff)",
+    "Toller Dampf voraus (Raising Steam)",
+    "Die Krone des Schäfers (The Shepherd's Crown)" # Tiffany Aching 5
 ]
 
 # Der Prompt, der die KI anleitet.
