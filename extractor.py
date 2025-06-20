@@ -1,124 +1,122 @@
 # extractor.py
 import google.generativeai as genai
 import json
+import argparse
+import pathlib
 from typing import List, Dict, Set
 from config import GEMINI_API_KEY
 
-# Konfiguration des Gemini-Modells
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-pro-latest') # Ein leistungsstarkes Modell für Analyse
+def load_prompt_template(file_path: pathlib.Path) -> str:
+    """Lädt die Prompt-Vorlage aus einer Textdatei."""
+    try:
+        return file_path.read_text(encoding='utf-8')
+    except FileNotFoundError:
+        print(f"!! Fehler: Prompt-Datei nicht gefunden unter {file_path}")
+        exit() # Beendet das Skript, wenn der Prompt fehlt
 
-# --- Konstanten ---
-# Die vollständige, chronologische Liste der 41 Hauptromane der Scheibenwelt.
-NOVEL_LIST: List[str] = [
-    "Die Farbe der Magie (The Colour of Magic)",
-    "Das Licht der Phantasie (The Light Fantastic)",
-    "Das Erbe des Zauberers (Equal Rites)",
-    "Gevatter Tod (Mort)",
-    "Der Zauberhut (Sourcery)",
-    "MacBest (Wyrd Sisters)",
-    "Pyramiden (Pyramids)",
-    "Wachen! Wachen! (Guards! Guards!)",
-#    "Eric (Faust Eric)", # Oft als illustrierte Novelle gezählt, kann aber hier rein.
-    "Voll im Bilde (Moving Pictures)",
-    "Alles Sense! (Reaper Man)",
-    "Hexen auf Reisen (Witches Abroad)",
-    "Einfach göttlich (Small Gods)",
-    "Lords und Ladies (Lords and Ladies)",
-    "Helle Barden (Men at Arms)",
-    "Rollende Steine (Soul Music)",
-    "Echt zauberhaft (Interesting Times)",
-    "Mummenschanz (Maskerade)",
-    "Hohle Worte (Feet of Clay)",
-    "Schweinsgalopp (Hogfather)",
-    "Ab die Post (Jingo)",
-    "Die letzte Heldin (The Last Hero)", # Illustrierte Novelle
-    "Der fünfte Elefant (The Fifth Elephant)",
-    "Die volle Wahrheit (The Truth)",
-    "Der Zeitdieb (Thief of Time)",
-    "Der letzte Held (The Last Continent)", # Hier ist die Reihenfolge manchmal umstritten
-    "Wahre Helden (The Amazing Maurice and his Educated Rodents)", # Eher ein Jugendbuch
-    "Die Nachtwächter (Night Watch)",
-    "Kleine freie Männer (The Wee Free Men)", # Tiffany Aching 1
-    "Weiberregiment (Monstrous Regiment)",
-    "Ein Hut voller Sterne (A Hat Full of Sky)", # Tiffany Aching 2
-    "Ab die Post (Going Postal)",
-    "Klonk! (Thud!)",
-    "Der Winterschmied (Wintersmith)", # Tiffany Aching 3
-    "Schöne Scheine (Making Money)",
-    "Der Club der unsichtbaren Gelehrten (Unseen Academicals)",
-    "Das Mitternachtskleid (I Shall Wear Midnight)", # Tiffany Aching 4
-    "Steife Prise (Snuff)",
-    "Toller Dampf voraus (Raising Steam)",
-    "Die Krone des Schäfers (The Shepherd's Crown)" # Tiffany Aching 5
-]
-
-# Der Prompt, der die KI anleitet.
-EXTRACTOR_PROMPT_TEMPLATE: str = (
-    "Du bist ein Experte für Terry Pratchetts Scheibenwelt mit enzyklopädischem Wissen. "
-    "Analysiere den Roman '{book_title}'. Deine Aufgabe ist es, eine Liste der Haupt- und "
-    "wichtigsten wiederkehrenden Nebencharaktere zu extrahieren, die in diesem spezifischen Roman "
-    "eine signifikante, handlungstragende Rolle spielen. "
-    "Gib das Ergebnis ausschließlich als valides JSON-Array von Strings aus, z.B. [\"Charakter A\", \"Charakter B\"]."
-)
-
-def get_characters_from_book(book_title: str) -> List[str]:
-    """
-    Sendet einen Prompt an die Gemini API, um die Charaktere aus einem Buch zu extrahieren.
-    """
+def get_characters_from_book(book_title: str, prompt_template: str, model) -> List[str]:
+    """Sendet einen Prompt an die Gemini API, um die Charaktere aus einem Buch zu extrahieren."""
     print(f"Analysiere Roman: {book_title}...")
-    prompt = EXTRACTOR_PROMPT_TEMPLATE.format(book_title=book_title)
+    prompt = prompt_template.format(book_title=book_title)
     
     try:
         response = model.generate_content(prompt)
-        # Bereinigen der Antwort, um sicherzustellen, dass es valides JSON ist
-        cleaned_response = response.text.strip().replace("`", "")
-        if cleaned_response.startswith("json"):
-             cleaned_response = cleaned_response[4:].strip()
-
-        characters = json.loads(cleaned_response)
-        print(f"-> Gefundene Charaktere: {', '.join(characters)}")
-        return characters
+        # Robuste Bereinigung der Antwort, um häufige LLM-Formatierungsfehler zu beheben
+        cleaned_response = response.text.strip()
+        if cleaned_response.startswith("```json"):
+            cleaned_response = cleaned_response[7:]
+        elif cleaned_response.startswith("```"):
+            cleaned_response = cleaned_response[3:]
+        
+        if cleaned_response.endswith("```"):
+            cleaned_response = cleaned_response[:-3]
+        
+        return json.loads(cleaned_response)
     except (json.JSONDecodeError, Exception) as e:
         print(f"!! Fehler bei der Analyse von '{book_title}': {e}")
+        print(f"!! Erhaltene Antwort: {response.text}")
         return []
 
-def main():
-    """
-    Hauptfunktion: Iteriert durch die Buchliste, sammelt Charaktere und speichert das Ergebnis.
-    """
-    # Ein Dictionary, um zu speichern, in welchen Büchern ein Charakter vorkommt.
+def main(args):
+    """Hauptfunktion: Orchestriert den gesamten Extraktionsprozess."""
+    # Konfiguriere API und Modell
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel(args.model_name)
+
+    # Lade Konfigurationsdateien
+    prompt_template = load_prompt_template(args.prompt_file)
+    try:
+        with args.input_file.open('r', encoding='utf-8') as f:
+            novel_list = json.load(f).get("novels", [])
+            if not novel_list:
+                raise ValueError("Die JSON-Datei enthält keinen 'novels'-Schlüssel oder die Liste ist leer.")
+    except FileNotFoundError:
+        print(f"!! Fehler: Eingabedatei '{args.input_file}' wurde nicht gefunden.")
+        return
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"!! Fehler beim Lesen der Eingabedatei '{args.input_file}': {e}")
+        return
+
+    # Datenverarbeitung
     character_appearances: Dict[str, List[str]] = {}
-    # Ein Set für die schnelle, de-duplizierte Sammlung aller Charakternamen.
-    all_unique_characters: Set[str] = set()
-
-    print("Starte den Literarischen Extraktor...")
-    for book in NOVEL_LIST:
-        chars_in_book = get_characters_from_book(book)
-        all_unique_characters.update(chars_in_book)
-        
-        for char in chars_in_book:
-            if char not in character_appearances:
-                character_appearances[char] = []
-            character_appearances[char].append(book)
-        print("-" * 20)
-
-    # Sortieren für eine saubere Ausgabe
-    sorted_characters = sorted(list(all_unique_characters))
     
-    # Erstellen der finalen Datenstruktur
+    print("Starte den Literarischen Extraktor...")
+    for book in novel_list:
+        chars_in_book = get_characters_from_book(book, prompt_template, model)
+        for char in chars_in_book:
+            char_normalized = char.strip() # Normalisiere den Namen
+            if char_normalized not in character_appearances:
+                character_appearances[char_normalized] = []
+            character_appearances[char_normalized].append(book)
+        print(f"-> {len(chars_in_book)} Charaktere aus '{book}' verarbeitet.")
+        print("-" * 30)
+
+    # Finale Datenstruktur aufbereiten
+    sorted_characters = sorted(character_appearances.keys())
     output_data = {
-        "total_unique_characters": len(sorted_characters),
+        "metadata": {
+            "total_unique_characters": len(sorted_characters),
+            "processed_novels": len(novel_list)
+        },
         "character_master_list": sorted_characters,
         "appearances_by_character": character_appearances
     }
 
-    # Speichern der Ergebnisse in einer JSON-Datei
-    output_path = "output/character_manifest.json"
-    print(f"Extraktion abgeschlossen. Speichere {len(sorted_characters)} einzigartige Charaktere in {output_path}")
-    with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(output_data, f, indent=4, ensure_ascii=False)
-    print("Prozess beendet.")
+    # Sicherstellen, dass der output-Ordner existiert
+    args.output_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Ergebnisse speichern
+    print(f"Extraktion abgeschlossen. Speichere Manifest in {args.output_file}")
+    with args.output_file.open('w', encoding='utf-8') as f:
+        json.dump(output_data, f, indent=2, ensure_ascii=False)
+    print("Prozess erfolgreich beendet.")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Extrahiert Scheibenwelt-Charaktere aus Romanen via Gemini API.")
+    parser.add_argument(
+        "--input-file", 
+        type=pathlib.Path, 
+        default=pathlib.Path("input/novels.json"), 
+        help="Pfad zur JSON-Datei mit der Romanliste."
+    )
+    parser.add_argument(
+        "--prompt-file", 
+        type=pathlib.Path, 
+        default=pathlib.Path("prompts/extractor_prompt.txt"), 
+        help="Pfad zur Textdatei mit der Prompt-Vorlage."
+    )
+    parser.add_argument(
+        "--output-file", 
+        type=pathlib.Path, 
+        default=pathlib.Path("output/character_manifest.json"), 
+        help="Pfad zur Ausgabe-JSON-Datei."
+    )
+    parser.add_argument(
+        "--model-name", 
+        type=str, 
+        default="gemini-1.5-pro-latest", 
+        help="Name des zu verwendenden Gemini-Modells."
+    )
+    
+    args = parser.parse_args()
+    main(args)
