@@ -1,6 +1,3 @@
-Sehr gut. Wir haben das Individuum, seinen Lernprozess und die Gesellschaft definiert. Nun kommen wir zum letzten und tiefgründigsten Pfeiler: dem, was diese Welt im Innersten zusammenhält und ihr einen übergeordneten Zweck gibt.
-
-Wir bearbeiten den finalen Pfeiler.
 Pfeiler 4: Die Meta-Narrative
 
 Dieses Dokument (docs/04_Meta_Narrative.md) ist eine Detaillierung von Pfeiler 4 aus dem MANIFEST.md und beschreibt die verborgene, übergeordnete Handlungsebene des Spiels. Es definiert, wie die Spielwelt selbst zum Akteur wird und wie Spieler Teil ihrer fundamentalen Entwicklung werden können.
