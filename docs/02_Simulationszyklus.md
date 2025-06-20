@@ -1,6 +1,3 @@
-Ja, sehr gerne. Wir haben die Grundlage für das individuelle Bewusstsein gelegt. Jetzt beschreiben wir die Maschine, die dieses Bewusstsein antreibt und es sich entwickeln lässt.
-
-Wie besprochen, gliedern wir das Dokument in das konzeptionelle "Prinzip" und die konkrete "Implementierung".
 Pfeiler 2: Die Kognitive Maschine
 
 Dieses Dokument (docs/02_Simulationszyklus.md) ist eine Detaillierung von Pfeiler 2 aus dem MANIFEST.md und beschreibt den Kernprozess, der die "Lebende Welt" antreibt und die Entwicklung der NPCs ermöglicht.
